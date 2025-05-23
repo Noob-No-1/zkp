@@ -69,21 +69,43 @@ struct UPoly {
 };
 
 UPoly make_slice(const MPoly& f, const std::vector<Fr>& p) {
-    UPoly slice;
-    slice.coeffs.resize(f.n + 1);
-    for (const auto& m : f.monoms) {
-        Fr coeff = m.coeff;
-        for (size_t i = 0; i < m.exps.size(); ++i) {
-            coeff *= fr_pow(p[i], m.exps[i]);
+    int j  = p.size();
+    int rem = f.n - j - 1;
+    int N = 1 << rem;
+    UPoly acc{{Fr(0)}};
+    for (int mask =0; mask < N; ++mask) {
+        UPoly cur{{Fr(0)}};
+        for (const auto& m : f.monoms) {
+            int degX = m.exps[j];
+            Fr coeff = m.coeff;
+            //computing r1 to rj-1 stuff, inefficient, but for illustration purpose i throw it here
+            for (int i = 0; i < j && !coeff.isZero(); ++i) {
+                if (m.exps[i]){
+                    coeff *= fr_pow(p[i], m.exps[i]);
+                }
+            }
+            //computing bj+1 to bn stuff which needs enumeration, ie tail factor
+            for (int i = 0; i < rem && !coeff.isZero(); ++i) {
+                int deg = j+1+i;
+                int exp = m.exps[deg];
+                if (exp && ((mask>>i) & 1) == 0) {
+                    coeff = Fr(0);
+                }
+            }
+            if (coeff.isZero()) continue;
+            if ((int)cur.coeffs.size() <= degX) {
+                cur.coeffs.resize(degX + 1, Fr(0));
+            }
+            cur.coeffs[degX] += coeff;
         }
-        slice.coeffs[m.exps[0]] += coeff;
+        acc += cur;
     }
-    return slice;
+    return acc;
 }
 
 int main() {
     bn::initPairing();
-    MPoly f;
+    MPoly f; //the true function 
     f.n = 3;
     f.monoms = {
         {Fr(3), {0,0,0}},
@@ -129,9 +151,7 @@ int main() {
         ver_r.push_back(ri); p.push_back(ri);
         rhs = cur.eval(ri);
     }
-    Fr rn = getRandomFr();
-    ver_r.push_back(rn); p.push_back(rn);
-    rhs = cur.eval(rn);
+
     Fr final_eval = f.eval(ver_r);
 
     if(rhs != final_eval) ok = false;
