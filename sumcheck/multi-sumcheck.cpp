@@ -118,7 +118,7 @@ int main() {
     g.monoms = {
         {Fr(3), {0,0,0}},
         {Fr(5), {1,0,0}},
-        {Fr(7), {0,1,0}},
+        {Fr(8), {0,1,0}},
         {Fr(11), {0,0,1}},
     };
     std::vector<Fr> p;
@@ -146,7 +146,7 @@ int main() {
         cur = make_slice(g, p);
         Fr Ci = cur.eval(Fr(0))+ cur.eval(Fr(1));
         if (cur.deg() > deg[i]) ok = false; //failed degree check
-        if (Ci != rhs) ok = false; //failed evaluation check
+        if (Ci != rhs) ok = false; //failed evaluation check 
         Fr ri = getRandomFr();
         ver_r.push_back(ri); p.push_back(ri);
         rhs = cur.eval(ri);
@@ -162,3 +162,9 @@ int main() {
         std::cout << "Verification failed!" << std::endl;
     }
 }
+//compile using: g++ -std=c++17 -O2 \
+  -I"/Users/zhaozhihao/GitHub/mcl/include" \
+  "/Users/zhaozhihao/GitHub/zkp/sumcheck/multi-sumcheck.cpp" \
+  "/Users/zhaozhihao/GitHub/mcl/build/lib/libmcl.a" \
+  -o multi-sumcheck
+//run using: ./multi-sumcheck
